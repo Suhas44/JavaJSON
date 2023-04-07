@@ -19,7 +19,7 @@ public class JSONInnerObject extends JSONObject {
     public String getStringVal() {
         String result = "";
         for (JSONObject obj : value) {
-            result += obj.getStringVal();
+            result += obj.getStringVal() + " ";
         }
         return result;
     }

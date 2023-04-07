@@ -3,7 +3,6 @@ package com.javajson;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Parser {
 
@@ -34,30 +33,37 @@ public class Parser {
         return data.substring(1, data.length() - 1);
     }
 
-    public static JSONObject parseField(String data) {
+    public static Object[] parseField(String data) {
+        Object[] o = new Object[2];
         String fieldName = data.substring(data.indexOf('\"') + 1, data.indexOf(':') - 1);
         String typeOfObject = "";
         int startIndex = data.indexOf(':') + 1;
         if (data.charAt(startIndex) == '{') {
             typeOfObject = "Object";
-            return parseObject(data, fieldName);
+            Object[] toRet = parseObject(data, fieldName);
+            // return parseObject(data, fieldName);
         } else if (data.charAt(startIndex) == '[') {
             typeOfObject = "Array";
-            return parseArray(data, fieldName);
+            Object[] toRet = parseArray(data, fieldName);
+            // return parseArray(data, fieldName);
         } else if (data.charAt(startIndex) == '\"') {
             typeOfObject = "String";
             return parseString(data, fieldName);
+            // return parseString(data, fieldName);
         } else if (data.substring(startIndex, startIndex + 5).equals("true,")
                 || data.substring(startIndex, startIndex + 6).equals("false,")) {
             typeOfObject = "Boolean";
-            return parseBoolean(data, fieldName);
+            Object[] toRet = parseBoolean(data, fieldName);
+            // return parseBoolean(data, fieldName);
         } else if (data.substring(startIndex, startIndex + 5).equals("null,")) {
             typeOfObject = "Null";
-            return parseNull(data, fieldName);
+            Object[] toRet = parseNull(data, fieldName);
+            // return parseNull(data, fieldName);
         } else if ((data.charAt(startIndex) == '-' && Character.isDigit(data.charAt(startIndex + 1)))
                 || Character.isDigit(data.charAt(startIndex))) {
             typeOfObject = "Number";
-            return parseNumber(data, fieldName);
+            Object[] toRet = parseNumber(data, fieldName);
+            // return parseNumber(data, fieldName);
         }
 
         if (typeOfObject.equals("")) {
@@ -67,18 +73,21 @@ public class Parser {
         return null;
     }
 
-    public static JSONString parseString(String data, String fieldName) {
+    public static Object[] parseString(String data, String fieldName) {
+        Object[] o = new Object[2];
         for (int i = data.indexOf(':') + 2; i < data.length(); i++) {
             if (data.charAt(i) == '\"' && data.charAt(i - 1) != '\\') {
                 String string = data.substring(data.indexOf(':') + 2, i);
-                return new JSONString(fieldName, string);
+                o[0] = new JSONString(fieldName, string);
+                o[1] = data.indexOf(",", i);
+                return o;
             }
         }
         throw new Error("Invalid JSON at field: " + fieldName);
     }
 
     public static JSONNumber parseNumber(String data, String fieldName) {
-        String number = data.substring(data.indexOf(':') + 1, data.indexOf(','));
+        String number = data.substring(data.indexOf(':') + 1, data.indexOf(',', data.indexOf(':') + 1));
         try {
             return new JSONNumber(fieldName, Double.parseDouble(number));
         } catch (Exception e) {
@@ -87,7 +96,8 @@ public class Parser {
     }
 
     public static JSONBoolean parseBoolean(String data, String fieldName) {
-        Boolean value = Boolean.parseBoolean(data.substring(data.indexOf(':') + 1, data.indexOf(',')));
+        Boolean value = Boolean
+                .parseBoolean(data.substring(data.indexOf(':') + 1, data.indexOf(',', data.indexOf(':') + 1)));
         return new JSONBoolean(fieldName, value);
     }
 
@@ -96,7 +106,6 @@ public class Parser {
     }
 
     public static JSONInnerObject parseObject(String data, String fieldName) {
-        // data = data.substring(data.indexOf(':') + 1, data.lastIndexOf('}') + 1);
         data = data.substring(data.indexOf(':') + 1, data.indexOf('}', data.indexOf(':')) + 1);
         try {
             return new JSONInnerObject(fieldName, parseJSON(data));
@@ -105,71 +114,47 @@ public class Parser {
         }
     }
 
-    // public static HashMap<Object, String> parseArrayVal(String data) { //refactoring this to a 2d array
-    //     HashMap<Object, String> hm = new HashMap<Object, String>();
-    //     String cols = ":";
-    //     data = cols + data;
-    //     if (data.charAt(1) == '{') {
-    //         int lastIndex = data.indexOf(",", data.indexOf('}')) + 1;
-    //         String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
-    //         System.out.println(rest);
-    //         hm.put(parseObject(data, "").getValue(), rest);
-    //         return hm;
-    //     } else if (data.charAt(1) == '[') {
-    //         hm.put(parseArray(data, "").getValue(), rest);
-    //         return hm;
-    //     } else if (data.charAt(1) == '\"') {
-    //         hm.put(parseString(data, "").getValue(), rest);
-    //         return hm;
-    //     } else if (data.substring(1, 6).equals("true,")
-    //             || data.substring(1, 7).equals("false,")) {
-    //         hm.put(parseBoolean(data, "").getValue(), rest);
-    //         return hm;
-    //     } else if (data.substring(1, 6).equals("null,")) { 
-    //         hm.put(parseNull(data, "").getValue(), rest);
-    //         return hm;
-    //     } else if ((data.charAt(1) == '-' && Character.isDigit(data.charAt(2))) 
-    //             || Character.isDigit(data.charAt(1))) {
-    //         hm.put(parseNumber(data, "").getValue(), rest);
-    //         return hm;
-    //     }
-    //     throw new Error("Invalid JSON");
-    // }
-
-    //Calculate the "rest" string for all cases
     public static Object[] parseArrayVal(String data) {
         Object[] o = new Object[2];
         String cols = ":";
         data = cols + data;
         if (data.charAt(1) == '{') {
-            int lastIndex = data.indexOf(",", data.indexOf('}')) + 1;
-            String rest = lastIndex == 0 ? "" : data.substring(lastIndex);
+            int lastIndex = data.indexOf(",", data.indexOf('}'));
+            String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
             o[0] = parseObject(data, "").getValue();
             o[1] = rest;
             return o;
         } else if (data.charAt(1) == '[') {
-            int lastIndex = data.indexOf(",", data.indexOf(']')) + 1;
-            String rest = lastIndex == 0 ? "" : data.substring(lastIndex);
+            int lastIndex = data.indexOf(",", data.indexOf(']'));
+            String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
             o[0] = parseArray(data, "").getValue();
             o[1] = rest;
             return o;
         } else if (data.charAt(1) == '\"') {
-            o[0] = parseString(data, "").getValue();
-            // o[1] = rest;
+            Object[] toRet = parseString(data, "");
+            o[0] = ((JSONString) toRet[0]).getValue();
+            String rest = ((int) toRet[1]) == -1 ? "" : data.substring((int) toRet[1] + 1);
+            o[1] = rest;
             return o;
         } else if (data.substring(1, 6).equals("true,")
                 || data.substring(1, 7).equals("false,")) {
+            int lastIndex = data.indexOf(',', data.indexOf(':') + 1);
+            String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
             o[0] = parseBoolean(data, "").getValue();
-            // o[1] = rest;
+            o[1] = rest;
             return o;
         } else if (data.substring(1, 6).equals("null,")) {
+            int lastIndex = data.indexOf(',', data.indexOf(':') + 1);
+            String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
             o[0] = parseNull(data, "").getValue();
-            // o[1] = rest;
+            o[1] = rest;
             return o;
         } else if ((data.charAt(1) == '-' && Character.isDigit(data.charAt(2)))
                 || Character.isDigit(data.charAt(1))) {
+            int lastIndex = data.indexOf(',', data.indexOf(':') + 1);
+            String rest = lastIndex == -1 ? "" : data.substring(lastIndex + 1);
             o[0] = parseNumber(data, "").getValue();
-            // o[1] = rest;
+            o[1] = rest;
             return o;
         }
         throw new Error("Invalid JSON");
@@ -189,20 +174,22 @@ public class Parser {
             i++;
         }
         data = data.substring(data.indexOf(':') + 2, i - 1);
-        System.out.println("WHOLE ARRAY INCLUDING INNER ONES:    " + data);
 
         while (data.length() > 0) {
             Object[] arr = parseArrayVal(data);
             Object val = arr[0];
             array.add(val);
             data = (String) arr[1];
-            System.out.println("DATA:    " + data);
             if (data == null) {
                 JSONArray n = new JSONArray(fieldName, array);
+                System.out.println(n.getValue());
                 return n;
             }
         }
 
+        JSONArray n = new JSONArray(fieldName, array);
+
+        System.out.println(n.getValue());
         return new JSONArray(fieldName, array);
     }
 }
