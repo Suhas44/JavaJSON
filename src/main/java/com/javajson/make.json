@@ -1,0 +1,29 @@
+{
+    "name": 12syvf78yrg7e8934u@#$%^&,
+    "isAdmin": false,
+    "address": null,
+    "age": 45,
+    "friends": [
+        "Mario",
+        "Luigi"
+    ],
+    "partner": {
+        "name": "Aly",
+        "age": 43,
+        "friends": [
+            "Karlie",
+            "Klo'ss",
+            "Albert \"Big Al\" Whitney"
+        ]
+    },
+    "properties": [
+        {
+            "address": "123 Sesame Street",
+            "value": 140000
+        },
+        {
+            "address": "456 Main Street",
+            "value": 230000
+        }
+    ]
+}
